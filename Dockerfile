@@ -1,9 +1,13 @@
-	FROM nginx:alpine
+FROM nginx:stable
 
-	COPY index.html /usr/share/nginx/html/index.html
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY site.conf /etc/nginx/conf.d/default.conf
+COPY index.html /usr/share/nginx/html/index.html
 
-	RUN chmod -R 777 /var/log/nginx /var/cache/nginx/ && chmod 644 /etc/nginx/*
+RUN touch /var/run/nginx.pid && \
+  chown -R www-data:www-data /var/run/nginx.pid && \
+  chown -R www-data:www-data /var/cache/nginx
 
-	EXPOSE 80
+USER www-data
 
-	CMD ["nginx", "-g", "daemon off;"] 
+EXPOSE 80
