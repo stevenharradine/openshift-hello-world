@@ -19,7 +19,7 @@
           --template="hello-world" \
           -p VERSION=${BUILD_NUMBER} \
           -p DEPLOYMENT_NAME="dev" \
-          --docker-image="172.30.136.32:5000/${PROJECT_NAME}/hello-world:${BUILD_NUMBER}" \
+          --docker-image="172.30.82.193:5000/${PROJECT_NAME}/hello-world:${BUILD_NUMBER}" \
           --dry-run -o yaml | oc apply -f -'
       openshiftVerifyDeployment deploymentConfig: 'dev', waitTime: '600000'
     }
