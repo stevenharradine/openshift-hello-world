@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: List
+metadata:
+  name: hello-world-pipeline
+items:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: hello-world-pipeline
+    labels:
+      app: hello-world-pipeline
+  spec:
+    source:
+      type: Git
+      git:
+        uri: git@github.com:stevenharradine/openshift-hello-world.git
+        ref: master
+      sourceSecret:
+        name: github-secret
+    triggers:
+      - type: GitHub
+        github:
+          secret: tisk
+    runPolicy: Serial
+    strategy:
+      type: JenkinsPipeline
+      jenkinsPipelineStrategy:
+        jenkinsfilePath: Jenkinsfile
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: hello-world
+    labels:
+      app: hello-world
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: hello-world
+    labels:
+      app: hello-world
+  spec:
+    source:
+      type: Git
+      git:
+        uri: git@github.com:stevenharradine/openshift-hello-world.git
+        ref: master
+      sourceSecret:
+        name: github-secret
+      runPolicy: Serial
+    strategy:
+      type: Docker
+      dockerStrategy:
+        dockerfilePath: Dockerfile
+    output:
+      to:
+        kind: ImageStreamTag
+        name: hello-world:latest
+- apiVersion: v1
+  kind: Template
+  metadata:
+    name: hello-world
+  parameters:
+  - name: DEPLOYMENT_NAME
+  - name: VERSION
+    description: What Docker image to deploy
+  objects:
+  - apiVersion: v1
+    kind: DeploymentConfig
+    metadata:
+      name: ${DEPLOYMENT_NAME}
+    spec:
+      replicas: 2
+      template:
+        metadata:
+          labels:
+            deploymentconfig: ${DEPLOYMENT_NAME}
+        spec:
+          containers:
+            - name: hello-world
+              image: 172.30.136.32:5000/o-mobility/mobility-pdp-evolution:${VERSION}
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 80
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 1000m
+                  memory: 256Mi
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${DEPLOYMENT_NAME}
+    spec:
+      ports:
+        - port: 80
+          targetPort: 80
+      selector:
+        deploymentconfig: ${DEPLOYMENT_NAME}
+  - apiVersion: v1
+    kind: Route
+    metadata:
+      name: ${DEPLOYMENT_NAME}
+    spec:
+      to:
+        kind: Service
+        name: ${DEPLOYMENT_NAME}
+        weight: 100
+      port:
+        targetPort: 80
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+ 
